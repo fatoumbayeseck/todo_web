@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personnalisation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --bg-color: {{ settings.bg_color }};
+            --card-color: {{ settings.card_color }};
+            --primary-color: {{ settings.primary_color }};
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="card">
+            <h1>Personnaliser l'application</h1>
+            <p class="subtitle">Changez le titre et les couleurs de votre interface</p>
+
+            <form method="POST" class="settings-form">
+                <label>
+                    Titre de l'application
+                    <input type="text" name="app_title" value="{{ settings.app_title }}" required>
+                </label>
+
+                <label>
+                    Sous-titre
+                    <input type="text" name="subtitle" value="{{ settings.subtitle }}" required>
+                </label>
+
+                <div class="color-section">
+                    <div class="color-choice">
+                        <div class="color-label">Couleur de fond</div>
+                        <div class="color-control">
+                            <input class="color-picker" type="color" name="bg_color" value="{{ settings.bg_color }}">
+                            <span class="color-value">{{ settings.bg_color }}</span>
+                        </div>
+                    </div>
+
+                    <div class="color-choice">
+                        <div class="color-label">Couleur de la carte</div>
+                        <div class="color-control">
+                            <input class="color-picker" type="color" name="card_color" value="{{ settings.card_color }}">
+                            <span class="color-value">{{ settings.card_color }}</span>
+                        </div>
+                    </div>
+
+                    <div class="color-choice">
+                        <div class="color-label">Couleur principale</div>
+                        <div class="color-control">
+                            <input class="color-picker" type="color" name="primary_color" value="{{ settings.primary_color }}">
+                            <span class="color-value">{{ settings.primary_color }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button type="submit">Enregistrer</button>
+                    <a href="{{ url_for('reset_settings') }}" class="reset-btn">Réinitialiser</a>
+                    <a href="{{ url_for('index') }}" class="back-btn">Retour</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
