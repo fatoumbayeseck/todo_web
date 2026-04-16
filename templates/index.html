@@ -20,8 +20,13 @@
                 <div>
                     <h1>{{ settings.app_title }}</h1>
                     <p class="subtitle">{{ settings.subtitle }}</p>
+                    <p class="user-badge">Connecté : {{ user.username }}</p>
                 </div>
-                <a href="{{ url_for('settings_page') }}" class="settings-btn">Personnaliser</a>
+
+                <div class="top-actions">
+                    <a href="{{ url_for('settings_page') }}" class="settings-btn">Personnaliser</a>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Déconnexion</a>
+                </div>
             </div>
 
             <form method="POST" class="task-form">
@@ -71,7 +76,7 @@
                             </span>
 
                             {% if task.note %}
-                                <div>{{ task.note }}</div>
+                                <div class="task-note">{{ task.note }}</div>
                             {% endif %}
 
                             <div class="task-meta">
