@@ -293,6 +293,7 @@ def reset_settings():
     return redirect(url_for("settings_page"))
 
 
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
