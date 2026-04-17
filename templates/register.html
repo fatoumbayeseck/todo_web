@@ -19,9 +19,15 @@
             <h1>Inscription</h1>
             <p class="subtitle">Créez votre compte utilisateur</p>
 
-            {% if error %}
-                <div class="auth-error">{{ error }}</div>
-            {% endif %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-container">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
 
             <form method="POST" class="auth-form">
                 <input type="text" name="username" placeholder="Nom d'utilisateur" required>

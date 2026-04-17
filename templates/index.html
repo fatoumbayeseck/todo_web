@@ -20,7 +20,7 @@
                 <div>
                     <h1>{{ settings.app_title }}</h1>
                     <p class="subtitle">{{ settings.subtitle }}</p>
-                    <p class="user-badge">Connecté : {{ user.username }}</p>
+                    <p class="user-badge">Bienvenue, {{ user.username }}</p>
                 </div>
 
                 <div class="top-actions">
@@ -28,6 +28,16 @@
                     <a href="{{ url_for('logout') }}" class="logout-btn">Déconnexion</a>
                 </div>
             </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-container">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
 
             <form method="POST" class="task-form">
                 <input type="text" name="task" placeholder="Nouvelle tâche..." required>
