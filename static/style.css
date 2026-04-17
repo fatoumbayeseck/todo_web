@@ -342,12 +342,13 @@ button,
     .top-actions {
         justify-content: flex-start;
     }
-
-     .welcome-message {
+    
+    .welcome-message {
     background: #eef2ff;
     color: #3730a3;
     padding: 10px 14px;
     border-radius: 10px;
     margin-bottom: 10px;
     font-size: 0.95rem;
+}
 }
