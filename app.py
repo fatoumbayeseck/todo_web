@@ -5,14 +5,15 @@ Created on Thu Apr 16 09:13:35 2026
 @author: hp
 """
 
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import os
 
 app = Flask(__name__)
-app.secret_key = "change-cette-cle-secrete"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 DATABASE = "database.db"
 
 DEFAULT_SETTINGS = {
@@ -123,6 +124,7 @@ def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
+            flash("Veuillez vous connecter pour accéder à l'application.", "warning")
             return redirect(url_for("login"))
         return view_func(*args, **kwargs)
     return wrapper
@@ -194,7 +196,6 @@ def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value):
 @app.route("/register", methods=["GET", "POST"])
 def register():
     settings = get_settings()
-    error = ""
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -202,11 +203,11 @@ def register():
         confirm_password = request.form.get("confirm_password", "").strip()
 
         if not username or not password or not confirm_password:
-            error = "Veuillez remplir tous les champs."
+            flash("Veuillez remplir tous les champs.", "error")
         elif password != confirm_password:
-            error = "Les mots de passe ne correspondent pas."
+            flash("Les mots de passe ne correspondent pas.", "error")
         elif len(password) < 6:
-            error = "Le mot de passe doit contenir au moins 6 caractères."
+            flash("Le mot de passe doit contenir au moins 6 caractères.", "error")
         else:
             conn = get_connection()
             existing_user = conn.execute(
@@ -215,7 +216,7 @@ def register():
             ).fetchone()
 
             if existing_user:
-                error = "Ce nom d'utilisateur existe déjà."
+                flash("Ce nom d'utilisateur existe déjà.", "error")
             else:
                 password_hash = generate_password_hash(password)
                 cursor = conn.execute(
@@ -228,17 +229,17 @@ def register():
                 session["username"] = username
 
                 conn.close()
+                flash("Compte créé avec succès. Bienvenue !", "success")
                 return redirect(url_for("index"))
 
             conn.close()
 
-    return render_template("register.html", settings=settings, error=error)
+    return render_template("register.html", settings=settings)
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     settings = get_settings()
-    error = ""
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -254,16 +255,18 @@ def login():
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+            flash(f"Heureux de vous revoir, {user['username']} !", "success")
             return redirect(url_for("index"))
 
-        error = "Nom d'utilisateur ou mot de passe incorrect."
+        flash("Nom d'utilisateur ou mot de passe incorrect.", "error")
 
-    return render_template("login.html", settings=settings, error=error)
+    return render_template("login.html", settings=settings)
 
 
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("Vous avez été déconnecté.", "info")
     return redirect(url_for("login"))
 
 
@@ -294,6 +297,9 @@ def index():
             )
             conn.commit()
             conn.close()
+            flash("Tâche ajoutée avec succès.", "success")
+        else:
+            flash("Veuillez entrer une tâche.", "warning")
 
         return redirect(url_for("index"))
 
@@ -326,6 +332,7 @@ def complete_task(task_id):
     )
     conn.commit()
     conn.close()
+    flash("Tâche marquée comme terminée.", "success")
     return redirect(url_for("index"))
 
 
@@ -339,6 +346,7 @@ def delete_task(task_id):
     )
     conn.commit()
     conn.close()
+    flash("Tâche supprimée.", "info")
     return redirect(url_for("index"))
 
 
@@ -370,9 +378,13 @@ def edit_task(task_id):
                 )
             )
             conn.commit()
+            conn.close()
+            flash("Tâche modifiée avec succès.", "success")
+            return redirect(url_for("index"))
 
         conn.close()
-        return redirect(url_for("index"))
+        flash("Le titre de la tâche ne peut pas être vide.", "warning")
+        return redirect(url_for("edit_task", task_id=task_id))
 
     task = conn.execute(
         "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
@@ -382,6 +394,7 @@ def edit_task(task_id):
     conn.close()
 
     if not task:
+        flash("Tâche introuvable.", "error")
         return redirect(url_for("index"))
 
     settings = get_settings()
@@ -409,6 +422,7 @@ def settings_page():
         conn.commit()
         conn.close()
 
+        flash("Personnalisation enregistrée.", "success")
         return redirect(url_for("index"))
 
     return render_template("settings.html", settings=current_settings)
@@ -432,6 +446,7 @@ def reset_settings():
     conn.commit()
     conn.close()
 
+    flash("Personnalisation réinitialisée.", "info")
     return redirect(url_for("settings_page"))
 
 
