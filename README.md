@@ -17,7 +17,7 @@ Application web développée en Python avec Flask.
 - HTML / CSS
 
 ## Lien de l'application
-[https://todo-web-qu6a.onrender.com](https://todo-web-qu6a.onrender.com)
+https://todo-web-qu6a.onrender.com
 
 ## Auteur
 Ndeye SECK
