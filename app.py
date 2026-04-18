@@ -9,12 +9,14 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from datetime import datetime
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
+from psycopg2.extras import RealDictCursor
+import psycopg2
 import os
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
-DATABASE = "database.db"
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 DEFAULT_SETTINGS = {
     "app_title": "Gestionnaire de tâches",
@@ -26,38 +28,38 @@ DEFAULT_SETTINGS = {
 
 
 def get_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL n'est pas défini.")
+    return psycopg2.connect(DATABASE_URL)
 
 
 def init_db():
     conn = get_connection()
+    cur = conn.cursor()
 
-    conn.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL
         )
     """)
 
-    conn.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
             note TEXT,
             done INTEGER NOT NULL DEFAULT 0,
             priority TEXT NOT NULL DEFAULT 'Moyenne',
-            deadline TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            deadline TEXT
         )
     """)
 
-    conn.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS settings (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
+            id INTEGER PRIMARY KEY,
             app_title TEXT NOT NULL,
             subtitle TEXT NOT NULL,
             bg_color TEXT NOT NULL,
@@ -66,26 +68,37 @@ def init_db():
         )
     """)
 
-    columns = [row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
+    cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS note TEXT")
+    cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'Moyenne'")
+    cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline TEXT")
+    cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id INTEGER")
 
-    if "priority" not in columns:
-        conn.execute("ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'Moyenne'")
+    cur.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.table_constraints
+                WHERE table_name = 'tasks'
+                AND constraint_type = 'FOREIGN KEY'
+                AND constraint_name = 'tasks_user_id_fkey'
+            ) THEN
+                ALTER TABLE tasks
+                ADD CONSTRAINT tasks_user_id_fkey
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+        END $$;
+    """)
 
-    if "deadline" not in columns:
-        conn.execute("ALTER TABLE tasks ADD COLUMN deadline TEXT")
+    cur.execute("SELECT * FROM settings WHERE id = 1")
+    existing_settings = cur.fetchone()
 
-    if "note" not in columns:
-        conn.execute("ALTER TABLE tasks ADD COLUMN note TEXT")
-
-    if "user_id" not in columns:
-        conn.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER")
-
-    existing_settings = conn.execute("SELECT * FROM settings WHERE id = 1").fetchone()
     if not existing_settings:
-        conn.execute("""
+        cur.execute("""
             INSERT INTO settings (id, app_title, subtitle, bg_color, card_color, primary_color)
-            VALUES (1, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
+            1,
             DEFAULT_SETTINGS["app_title"],
             DEFAULT_SETTINGS["subtitle"],
             DEFAULT_SETTINGS["bg_color"],
@@ -94,12 +107,16 @@ def init_db():
         ))
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
 def get_settings():
     conn = get_connection()
-    settings = conn.execute("SELECT * FROM settings WHERE id = 1").fetchone()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM settings WHERE id = 1")
+    settings = cur.fetchone()
+    cur.close()
     conn.close()
 
     if settings:
@@ -114,7 +131,10 @@ def get_current_user():
         return None
 
     conn = get_connection()
-    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user = cur.fetchone()
+    cur.close()
     conn.close()
 
     return dict(user) if user else None
@@ -141,10 +161,10 @@ def get_priority_rank(priority):
 
 def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value):
     conn = get_connection()
-    tasks = conn.execute(
-        "SELECT * FROM tasks WHERE user_id = ?",
-        (user_id,)
-    ).fetchall()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM tasks WHERE user_id = %s", (user_id,))
+    tasks = cur.fetchall()
+    cur.close()
     conn.close()
 
     tasks = [dict(task) for task in tasks]
@@ -210,28 +230,30 @@ def register():
             flash("Le mot de passe doit contenir au moins 6 caractères.", "error")
         else:
             conn = get_connection()
-            existing_user = conn.execute(
-                "SELECT * FROM users WHERE username = ?",
-                (username,)
-            ).fetchone()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+            existing_user = cur.fetchone()
 
             if existing_user:
                 flash("Ce nom d'utilisateur existe déjà.", "error")
             else:
                 password_hash = generate_password_hash(password)
-                cursor = conn.execute(
-                    "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                cur.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
                     (username, password_hash)
                 )
+                new_user = cur.fetchone()
                 conn.commit()
 
-                session["user_id"] = cursor.lastrowid
+                session["user_id"] = new_user["id"]
                 session["username"] = username
 
+                cur.close()
                 conn.close()
                 flash("Compte créé avec succès. Bienvenue !", "success")
                 return redirect(url_for("index"))
 
+            cur.close()
             conn.close()
 
     return render_template("register.html", settings=settings)
@@ -246,10 +268,10 @@ def login():
         password = request.form.get("password", "").strip()
 
         conn = get_connection()
-        user = conn.execute(
-            "SELECT * FROM users WHERE username = ?",
-            (username,)
-        ).fetchone()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+        user = cur.fetchone()
+        cur.close()
         conn.close()
 
         if user and check_password_hash(user["password_hash"], password):
@@ -281,10 +303,11 @@ def index():
 
         if task_text:
             conn = get_connection()
-            conn.execute(
+            cur = conn.cursor()
+            cur.execute(
                 """
                 INSERT INTO tasks (user_id, title, note, done, priority, deadline)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """,
                 (
                     session["user_id"],
@@ -296,6 +319,7 @@ def index():
                 )
             )
             conn.commit()
+            cur.close()
             conn.close()
             flash("Tâche ajoutée avec succès.", "success")
         else:
@@ -326,11 +350,13 @@ def index():
 @login_required
 def complete_task(task_id):
     conn = get_connection()
-    conn.execute(
-        "UPDATE tasks SET done = 1 WHERE id = ? AND user_id = ?",
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE tasks SET done = 1 WHERE id = %s AND user_id = %s",
         (task_id, session["user_id"])
     )
     conn.commit()
+    cur.close()
     conn.close()
     flash("Tâche marquée comme terminée.", "success")
     return redirect(url_for("index"))
@@ -340,11 +366,13 @@ def complete_task(task_id):
 @login_required
 def delete_task(task_id):
     conn = get_connection()
-    conn.execute(
-        "DELETE FROM tasks WHERE id = ? AND user_id = ?",
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM tasks WHERE id = %s AND user_id = %s",
         (task_id, session["user_id"])
     )
     conn.commit()
+    cur.close()
     conn.close()
     flash("Tâche supprimée.", "info")
     return redirect(url_for("index"))
@@ -354,6 +382,7 @@ def delete_task(task_id):
 @login_required
 def edit_task(task_id):
     conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     if request.method == "POST":
         new_title = request.form.get("task", "").strip()
@@ -362,11 +391,11 @@ def edit_task(task_id):
         new_deadline = request.form.get("deadline", "").strip()
 
         if new_title:
-            conn.execute(
+            cur.execute(
                 """
                 UPDATE tasks
-                SET title = ?, note = ?, priority = ?, deadline = ?
-                WHERE id = ? AND user_id = ?
+                SET title = %s, note = %s, priority = %s, deadline = %s
+                WHERE id = %s AND user_id = %s
                 """,
                 (
                     new_title,
@@ -378,19 +407,23 @@ def edit_task(task_id):
                 )
             )
             conn.commit()
+            cur.close()
             conn.close()
             flash("Tâche modifiée avec succès.", "success")
             return redirect(url_for("index"))
 
+        cur.close()
         conn.close()
         flash("Le titre de la tâche ne peut pas être vide.", "warning")
         return redirect(url_for("edit_task", task_id=task_id))
 
-    task = conn.execute(
-        "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
+    cur.execute(
+        "SELECT * FROM tasks WHERE id = %s AND user_id = %s",
         (task_id, session["user_id"])
-    ).fetchone()
+    )
+    task = cur.fetchone()
 
+    cur.close()
     conn.close()
 
     if not task:
@@ -414,12 +447,14 @@ def settings_page():
         primary_color = request.form.get("primary_color", "").strip() or DEFAULT_SETTINGS["primary_color"]
 
         conn = get_connection()
-        conn.execute("""
+        cur = conn.cursor()
+        cur.execute("""
             UPDATE settings
-            SET app_title = ?, subtitle = ?, bg_color = ?, card_color = ?, primary_color = ?
+            SET app_title = %s, subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
             WHERE id = 1
         """, (app_title, subtitle, bg_color, card_color, primary_color))
         conn.commit()
+        cur.close()
         conn.close()
 
         flash("Personnalisation enregistrée.", "success")
@@ -432,9 +467,10 @@ def settings_page():
 @login_required
 def reset_settings():
     conn = get_connection()
-    conn.execute("""
+    cur = conn.cursor()
+    cur.execute("""
         UPDATE settings
-        SET app_title = ?, subtitle = ?, bg_color = ?, card_color = ?, primary_color = ?
+        SET app_title = %s, subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
         WHERE id = 1
     """, (
         DEFAULT_SETTINGS["app_title"],
@@ -444,6 +480,7 @@ def reset_settings():
         DEFAULT_SETTINGS["primary_color"]
     ))
     conn.commit()
+    cur.close()
     conn.close()
 
     flash("Personnalisation réinitialisée.", "info")
