@@ -575,7 +575,7 @@ def settings_page():
     current_settings = get_settings()
 
     if request.method == "POST":
-        app_title = request.form.get("app_title", "").strip() or DEFAULT_SETTINGS["app_title"]
+        app_title = DEFAULT_SETTINGS["app_title"]
         subtitle = request.form.get("subtitle", "").strip() or DEFAULT_SETTINGS["subtitle"]
         bg_color = request.form.get("bg_color", "").strip() or DEFAULT_SETTINGS["bg_color"]
         card_color = request.form.get("card_color", "").strip() or DEFAULT_SETTINGS["card_color"]
