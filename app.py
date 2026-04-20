@@ -10,7 +10,10 @@ from datetime import datetime
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2.extras import RealDictCursor
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from email.message import EmailMessage
 import psycopg2
+import smtplib
 import os
 
 app = Flask(__name__)
@@ -33,6 +36,63 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 
+def get_serializer():
+    return URLSafeTimedSerializer(app.secret_key)
+
+
+def generate_reset_token(email):
+    serializer = get_serializer()
+    return serializer.dumps(email, salt="password-reset-salt")
+
+
+def verify_reset_token(token, max_age=3600):
+    serializer = get_serializer()
+    try:
+        email = serializer.loads(token, salt="password-reset-salt", max_age=max_age)
+        return email
+    except (BadSignature, SignatureExpired):
+        return None
+
+
+def send_reset_email(to_email, username):
+    token = generate_reset_token(to_email)
+    reset_link = url_for("reset_password", token=token, _external=True)
+
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_port = int(os.environ.get("SMTP_PORT", "465"))
+    smtp_username = os.environ.get("SMTP_USERNAME")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_username)
+
+    subject = "Réinitialisation de votre mot de passe"
+    body = f"""
+Bonjour {username},
+
+Vous avez demandé la réinitialisation de votre mot de passe.
+
+Cliquez sur ce lien pour choisir un nouveau mot de passe :
+{reset_link}
+
+Ce lien expire dans 1 heure.
+
+Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
+"""
+
+    if not all([smtp_host, smtp_username, smtp_password, smtp_from]):
+        app.logger.warning("SMTP non configuré. Lien de réinitialisation : %s", reset_link)
+        return
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = smtp_from
+    message["To"] = to_email
+    message.set_content(body)
+
+    with smtplib.SMTP_SSL(smtp_host, smtp_port) as smtp:
+        smtp.login(smtp_username, smtp_password)
+        smtp.send_message(message)
+
+
 def init_db():
     conn = get_connection()
     cur = conn.cursor()
@@ -41,6 +101,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT NOT NULL UNIQUE,
+            email TEXT UNIQUE,
             password_hash TEXT NOT NULL
         )
     """)
@@ -72,6 +133,8 @@ def init_db():
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'Moyenne'")
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline TEXT")
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id INTEGER")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT")
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email)")
 
     cur.execute("""
         DO $$
@@ -219,10 +282,11 @@ def register():
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
 
-        if not username or not password or not confirm_password:
+        if not username or not email or not password or not confirm_password:
             flash("Veuillez remplir tous les champs.", "error")
         elif password != confirm_password:
             flash("Les mots de passe ne correspondent pas.", "error")
@@ -231,16 +295,22 @@ def register():
         else:
             conn = get_connection()
             cur = conn.cursor(cursor_factory=RealDictCursor)
+
             cur.execute("SELECT * FROM users WHERE username = %s", (username,))
             existing_user = cur.fetchone()
 
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            existing_email = cur.fetchone()
+
             if existing_user:
                 flash("Ce nom d'utilisateur existe déjà.", "error")
+            elif existing_email:
+                flash("Cet email est déjà utilisé.", "error")
             else:
                 password_hash = generate_password_hash(password)
                 cur.execute(
-                    "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
-                    (username, password_hash)
+                    "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
+                    (username, email, password_hash)
                 )
                 new_user = cur.fetchone()
                 conn.commit()
@@ -283,6 +353,71 @@ def login():
         flash("Nom d'utilisateur ou mot de passe incorrect.", "error")
 
     return render_template("login.html", settings=settings)
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    settings = get_settings()
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Veuillez entrer votre email.", "warning")
+            return render_template("forgot_password.html", settings=settings)
+
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if user:
+            send_reset_email(user["email"], user["username"])
+
+        flash("Si cet email existe, un lien de réinitialisation a été envoyé.", "info")
+        return redirect(url_for("login"))
+
+    return render_template("forgot_password.html", settings=settings)
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    settings = get_settings()
+    email = verify_reset_token(token)
+
+    if not email:
+        flash("Le lien de réinitialisation est invalide ou expiré.", "error")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not password or not confirm_password:
+            flash("Veuillez remplir tous les champs.", "warning")
+        elif password != confirm_password:
+            flash("Les mots de passe ne correspondent pas.", "error")
+        elif len(password) < 6:
+            flash("Le mot de passe doit contenir au moins 6 caractères.", "error")
+        else:
+            password_hash = generate_password_hash(password)
+
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE users SET password_hash = %s WHERE email = %s",
+                (password_hash, email)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            flash("Votre mot de passe a été réinitialisé avec succès.", "success")
+            return redirect(url_for("login"))
+
+    return render_template("reset_password.html", settings=settings)
 
 
 @app.route("/logout")
