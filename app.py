@@ -102,9 +102,10 @@ def send_welcome_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Bienvenue sur Gestionnaire de tâches.
+Nous sommes ravis de vous souhaiter la bienvenue sur Gestionnaire de tâches :) .
 
 Votre compte a bien été créé et vous pouvez maintenant :
+    
 - ajouter des tâches
 - définir une priorité
 - ajouter une note
@@ -124,9 +125,10 @@ def send_deletedaccount_email(to_email, username):
 Bonjour {username},
 
 Nous sommes tristes de vous voir partir :( .
+                                          
 Mais nous vous annonçons quand même que votre compte a étè supprimé avec succés.             
                                          
-    À bientôt (finn on l'espére)!
+À bientôt (finn on l'espére)!
     """
         send_email_message(to_email, subject, body)
 
