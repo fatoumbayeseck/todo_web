@@ -54,15 +54,32 @@ def verify_reset_token(token, max_age=3600):
         return None
 
 
-def send_reset_email(to_email, username):
-    token = generate_reset_token(to_email)
-    reset_link = url_for("reset_password", token=token, _external=True)
-
+def send_email_message(to_email, subject, body):
     smtp_host = os.environ.get("SMTP_HOST")
     smtp_port = int(os.environ.get("SMTP_PORT", "465"))
     smtp_username = os.environ.get("SMTP_USERNAME")
     smtp_password = os.environ.get("SMTP_PASSWORD")
     smtp_from = os.environ.get("SMTP_FROM", smtp_username)
+
+    if not all([smtp_host, smtp_username, smtp_password, smtp_from]):
+        app.logger.warning("SMTP non configuré. Email non envoyé à %s. Sujet: %s", to_email, subject)
+        app.logger.warning("Contenu email:\n%s", body)
+        return
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = smtp_from
+    message["To"] = to_email
+    message.set_content(body)
+
+    with smtplib.SMTP_SSL(smtp_host, smtp_port) as smtp:
+        smtp.login(smtp_username, smtp_password)
+        smtp.send_message(message)
+
+
+def send_reset_email(to_email, username):
+    token = generate_reset_token(to_email)
+    reset_link = url_for("reset_password", token=token, _external=True)
 
     subject = "Réinitialisation de votre mot de passe"
     body = f"""
@@ -77,20 +94,28 @@ Ce lien expire dans 1 heure.
 
 Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
 """
+    send_email_message(to_email, subject, body)
 
-    if not all([smtp_host, smtp_username, smtp_password, smtp_from]):
-        app.logger.warning("SMTP non configuré. Lien de réinitialisation : %s", reset_link)
-        return
 
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = smtp_from
-    message["To"] = to_email
-    message.set_content(body)
+def send_welcome_email(to_email, username):
+    subject = "Bienvenue sur Gestionnaire de tâches"
+    body = f"""
+Bonjour {username},
 
-    with smtplib.SMTP_SSL(smtp_host, smtp_port) as smtp:
-        smtp.login(smtp_username, smtp_password)
-        smtp.send_message(message)
+Bienvenue sur Gestionnaire de tâches.
+
+Votre compte a bien été créé et vous pouvez maintenant :
+- ajouter des tâches
+- définir une priorité
+- ajouter une note
+- fixer une date limite
+- personnaliser l'interface
+
+Nous vous souhaitons une excellente utilisation de l'application.
+
+À bientôt !
+"""
+    send_email_message(to_email, subject, body)
 
 
 def init_db():
@@ -320,6 +345,9 @@ def register():
 
                 cur.close()
                 conn.close()
+
+                send_welcome_email(email, username)
+
                 flash("Compte créé avec succès. Bienvenue !", "success")
                 return redirect(url_for("index"))
 
@@ -575,7 +603,6 @@ def settings_page():
     current_settings = get_settings()
 
     if request.method == "POST":
-        app_title = DEFAULT_SETTINGS["app_title"]
         subtitle = request.form.get("subtitle", "").strip() or DEFAULT_SETTINGS["subtitle"]
         bg_color = request.form.get("bg_color", "").strip() or DEFAULT_SETTINGS["bg_color"]
         card_color = request.form.get("card_color", "").strip() or DEFAULT_SETTINGS["card_color"]
@@ -587,7 +614,13 @@ def settings_page():
             UPDATE settings
             SET app_title = %s, subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
             WHERE id = 1
-        """, (app_title, subtitle, bg_color, card_color, primary_color))
+        """, (
+            DEFAULT_SETTINGS["app_title"],
+            subtitle,
+            bg_color,
+            card_color,
+            primary_color
+        ))
         conn.commit()
         cur.close()
         conn.close()
@@ -595,7 +628,8 @@ def settings_page():
         flash("Personnalisation enregistrée.", "success")
         return redirect(url_for("index"))
 
-    return render_template("settings.html", settings=current_settings)
+    user = get_current_user()
+    return render_template("settings.html", settings=current_settings, user=user)
 
 
 @app.route("/reset-settings")
@@ -620,6 +654,36 @@ def reset_settings():
 
     flash("Personnalisation réinitialisée.", "info")
     return redirect(url_for("settings_page"))
+
+
+@app.route("/delete-account", methods=["POST"])
+@login_required
+def delete_account():
+    password = request.form.get("password", "").strip()
+    user = get_current_user()
+
+    if not user:
+        flash("Utilisateur introuvable.", "error")
+        return redirect(url_for("login"))
+
+    if not password:
+        flash("Veuillez entrer votre mot de passe pour supprimer le compte.", "warning")
+        return redirect(url_for("settings_page"))
+
+    if not check_password_hash(user["password_hash"], password):
+        flash("Mot de passe incorrect. Suppression du compte annulée.", "error")
+        return redirect(url_for("settings_page"))
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id = %s", (user["id"],))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    session.clear()
+    flash("Votre compte a été supprimé.", "info")
+    return redirect(url_for("register"))
 
 
 init_db()
