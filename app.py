@@ -85,12 +85,12 @@ def send_reset_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Vous avez demandé la réinitialisation de votre mot de passe.
+Alors comme ça on a oublié son mot de passe ? pas de panique.
 
 Cliquez sur ce lien pour choisir un nouveau mot de passe :
 {reset_link}
 
-Ce lien expire dans 1 heure.
+prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.
 
 Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
 """
@@ -98,7 +98,7 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
 
 
 def send_welcome_email(to_email, username):
-    subject = "Bienvenue sur Gestionnaire de tâches"
+    subject = "Bienvenue sur Gestionnaire de tâches by NFMS"
     body = f"""
 Bonjour {username},
 
@@ -116,6 +116,19 @@ Nous vous souhaitons une excellente utilisation de l'application.
 À bientôt !
 """
     send_email_message(to_email, subject, body)
+    
+    
+def send_deletedaccount_email(to_email, username):
+        subject = "Suppresion de votre compte"
+        body = f"""
+Bonjour {username},
+
+Nous sommes tristes de vous voir partir :( .
+Mais nous vous annonçons quand même que votre compte a étè supprimé avec succés.             
+                                         
+    À bientôt (finn on l'espére)!
+    """
+        send_email_message(to_email, subject, body)
 
 
 def init_db():
@@ -706,6 +719,9 @@ def delete_account():
         flash("Mot de passe incorrect. Suppression du compte annulée.", "error")
         return redirect(url_for("settings_page"))
 
+    if user.get("email"):
+        send_deletedaccount_email(user["email"], user["username"])
+        
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM users WHERE id = %s", (user["id"],))
@@ -716,7 +732,7 @@ def delete_account():
     session.clear()
     flash("Votre compte a été supprimé.", "info")
     return redirect(url_for("register"))
-
+    
 
 init_db()
 
