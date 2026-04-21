@@ -61,13 +61,13 @@ python app.py
 Variables d'environnement
 Pour faire fonctionner l’application, il faut configurer :
 
-DATABASE_URL= postgresql://base_todo_web_user:EdOFENT0din3BrUUEqpVwgK6gzdVc864@dpg-d7hp0urbc2fs73ds26dg-a/base_todo_web
-SECRET_KEY=...
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USERNAME= ndeyefatous013@gmail.com
-SMTP_PASSWORD=...
-SMTP_FROM= ndeyefatous013@gmail.com
+- DATABASE_URL= postgresql://base_todo_web_user:EdOFENT0din3BrUUEqpVwgK6gzdVc864@dpg-d7hp0urbc2fs73ds26dg-a/base_todo_web
+- SECRET_KEY=...
+- SMTP_HOST=smtp.gmail.com
+- SMTP_PORT=465
+- SMTP_USERNAME= ndeyefatous013@gmail.com
+- SMTP_PASSWORD=...
+- SMTP_FROM= ndeyefatous013@gmail.com
 
 ## Base de données
 L’application utilise PostgreSQL avec les tables suivantes :
