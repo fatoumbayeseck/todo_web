@@ -211,8 +211,8 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
     <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:Arial, sans-serif;">
         <div style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
             <div style="background:#4f46e5; color:white; padding:24px 30px;">
-                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches</h1>
-                <p style="margin:8px 0 0 0; opacity:0.95;">Application de gestion personnelle</p>
+                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches by NFMS</h1>
+                <p style="margin:8px 0 0 0; opacity:0.95;">Application d'organisation</p>
             </div>
 
             <div style="padding:30px;">
@@ -224,9 +224,6 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
 
                 {action_button}
 
-                <div style="margin-top:30px; padding-top:20px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:14px;">
-                    Merci d'utiliser <strong>Gestionnaire de tâches</strong>.
-                </div>
             </div>
         </div>
     </body>
