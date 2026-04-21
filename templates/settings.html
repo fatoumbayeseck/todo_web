@@ -17,7 +17,7 @@
     <div class="app-container">
         <div class="card">
             <h1>Personnaliser l'application</h1>
-            <p class="subtitle">Changez le titre et les couleurs de votre interface</p>
+            <p class="subtitle">Changez le sous-titre et les couleurs de votre interface</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -30,6 +30,10 @@
             {% endwith %}
 
             <form method="POST" class="settings-form">
+                <label>
+                    Titre de l'application
+                    <input type="text" value="{{ settings.app_title }}" disabled>
+                </label>
 
                 <label>
                     Sous-titre
@@ -68,6 +72,18 @@
                     <a href="{{ url_for('index') }}" class="back-btn">Retour</a>
                 </div>
             </form>
+
+            <div class="danger-zone">
+                <h2>Supprimer mon compte</h2>
+                <p>
+                    Cette action est définitive. Toutes vos tâches seront supprimées.
+                </p>
+
+                <form method="POST" action="{{ url_for('delete_account') }}" class="delete-account-form">
+                    <input type="password" name="password" placeholder="Entrez votre mot de passe" required>
+                    <button type="submit" class="delete-account-btn">Supprimer mon compte</button>
+                </form>
+            </div>
         </div>
     </div>
 </body>
