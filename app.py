@@ -223,7 +223,10 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
                 </div>
 
                 {action_button}
-
+                
+                <div style="margin-top:30px; padding-top:20px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:14px;">
+                    
+                </div>
             </div>
         </div>
     </body>
