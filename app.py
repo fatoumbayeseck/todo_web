@@ -54,7 +54,7 @@ def verify_reset_token(token, max_age=3600):
         return None
 
 
-def send_email_message(to_email, subject, body):
+def send_email_message(to_email, subject, body, html_body=None):
     smtp_host = os.environ.get("SMTP_HOST")
     smtp_port = int(os.environ.get("SMTP_PORT", "465"))
     smtp_username = os.environ.get("SMTP_USERNAME")
@@ -64,6 +64,8 @@ def send_email_message(to_email, subject, body):
     if not all([smtp_host, smtp_username, smtp_password, smtp_from]):
         app.logger.warning("SMTP non configuré. Email non envoyé à %s. Sujet: %s", to_email, subject)
         app.logger.warning("Contenu email:\n%s", body)
+        if html_body:
+            app.logger.warning("Contenu HTML email:\n%s", html_body)
         return
 
     message = EmailMessage()
@@ -71,6 +73,9 @@ def send_email_message(to_email, subject, body):
     message["From"] = smtp_from
     message["To"] = to_email
     message.set_content(body)
+
+    if html_body:
+        message.add_alternative(html_body, subtype="html")
 
     with smtplib.SMTP_SSL(smtp_host, smtp_port) as smtp:
         smtp.login(smtp_username, smtp_password)
@@ -90,11 +95,24 @@ Alors comme ça on a oublié son mot de passe ? pas de panique.
 Cliquez sur ce lien pour choisir un nouveau mot de passe :
 {reset_link}
 
-prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.
+Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.
 
 Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
 """
-    send_email_message(to_email, subject, body)
+    html_body = build_email_html(
+        title="Réinitialisation du mot de passe",
+        message_html=f"""
+            <p>Bonjour <strong>{username}</strong>,</p>
+            <p>Alors comme ça on a oublié son mot de passe ? pas de panique.</p>
+            <p>Cliquez sur ce lien pour choisir un nouveau mot de passe :</p>
+            <p style="color:#b91c1c;"><strong>Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.</strong></p>
+            <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        """,
+        action_text="Réinitialiser mon mot de passe",
+        action_link=reset_link
+    )
+
+    send_email_message(to_email, subject, body, html_body)
 
 
 def send_welcome_email(to_email, username):
@@ -102,9 +120,9 @@ def send_welcome_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Nous sommes ravis de vous souhaiter la bienvenue sur Gestionnaire de tâches :) .
+Nous sommes ravis de vous annoncer que votre compte a étè créé avec succés :) .
 
-Votre compte a bien été créé et vous pouvez maintenant :
+Vous pouvez maintenant :
     
 - ajouter des tâches
 - définir une priorité
@@ -116,7 +134,24 @@ Nous vous souhaitons une excellente utilisation de l'application.
 
 À bientôt !
 """
-    send_email_message(to_email, subject, body)
+    html_body = build_email_html(
+        title="Bienvenue sur Gestionnaire de tâches by NFMS",
+        message_html=f"""
+            <p>Bonjour <strong>{username}</strong>,</p>
+            <p>Nous sommes ravis de vous annoncer que votre compte a étè créé avec succés :) .</p>
+            <p>Vous pouvez maintenant :</p>
+            <ul style="padding-left:20px; color:#374151;">
+                <li>ajouter des tâches</li>
+                <li>définir une priorité</li>
+                <li>ajouter une note</li>
+                <li>fixer une date limite</li>
+                <li>personnaliser votre interface</li>
+            </ul>
+            <p>Nous vous souhaitons une excellente utilisation de l'application.</p>
+        """
+    )
+
+    send_email_message(to_email, subject, body, html_body)
     
     
 def send_deletedaccount_email(to_email, username):
@@ -130,7 +165,73 @@ Mais nous vous annonçons quand même que votre compte a étè supprimé avec su
                                          
 À bientôt (finn on l'espére)!
     """
-        send_email_message(to_email, subject, body)
+        html_body = build_email_html(
+            title="Compte supprimé",
+            message_html=f"""
+                <p>Bonjour <strong>{username}</strong>,</p>
+                <p>Nous sommes tristes de vous voir partir :( .</p>
+                <p>Mais nous vous annonçons quand même que votre compte a étè supprimé avec succés.</p>
+
+                <p>À bientôt (finn on l'espére)!</p>
+            """
+        )
+
+        send_email_message(to_email, subject, body, html_body)
+    
+        
+        
+def build_email_html(title, message_html, action_text=None, action_link=None):
+    action_button = ""
+    if action_text and action_link:
+        action_button = f"""
+        <div style="text-align:center; margin: 30px 0;">
+            <a href="{action_link}"
+               style="
+                   background-color:#4f46e5;
+                   color:white;
+                   text-decoration:none;
+                   padding:14px 22px;
+                   border-radius:10px;
+                   display:inline-block;
+                   font-weight:bold;
+                   font-family:Arial, sans-serif;
+               ">
+                {action_text}
+            </a>
+        </div>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>{title}</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:Arial, sans-serif;">
+        <div style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+            <div style="background:#4f46e5; color:white; padding:24px 30px;">
+                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches</h1>
+                <p style="margin:8px 0 0 0; opacity:0.95;">Application de gestion personnelle</p>
+            </div>
+
+            <div style="padding:30px;">
+                <h2 style="margin-top:0; color:#1f2937;">{title}</h2>
+
+                <div style="color:#374151; font-size:16px; line-height:1.7;">
+                    {message_html}
+                </div>
+
+                {action_button}
+
+                <div style="margin-top:30px; padding-top:20px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:14px;">
+                    Merci d'utiliser <strong>Gestionnaire de tâches</strong>.
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 
 def init_db():
