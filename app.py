@@ -144,9 +144,9 @@ def init_db():
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS settings (
-            id INTEGER PRIMARY KEY,
-            app_title TEXT NOT NULL,
+        CREATE TABLE IF NOT EXISTS user_settings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
             subtitle TEXT NOT NULL,
             bg_color TEXT NOT NULL,
             card_color TEXT NOT NULL,
@@ -178,39 +178,59 @@ def init_db():
         END $$;
     """)
 
-    cur.execute("SELECT * FROM settings WHERE id = 1")
-    existing_settings = cur.fetchone()
-
-    if not existing_settings:
-        cur.execute("""
-            INSERT INTO settings (id, app_title, subtitle, bg_color, card_color, primary_color)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (
-            1,
-            DEFAULT_SETTINGS["app_title"],
-            DEFAULT_SETTINGS["subtitle"],
-            DEFAULT_SETTINGS["bg_color"],
-            DEFAULT_SETTINGS["card_color"],
-            DEFAULT_SETTINGS["primary_color"]
-        ))
-
     conn.commit()
     cur.close()
     conn.close()
 
 
-def get_settings():
+def ensure_user_settings(user_id):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM settings WHERE id = 1")
+
+    cur.execute("SELECT * FROM user_settings WHERE user_id = %s", (user_id,))
     settings = cur.fetchone()
+
+    if not settings:
+        cur.execute("""
+            INSERT INTO user_settings (user_id, subtitle, bg_color, card_color, primary_color)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            user_id,
+            DEFAULT_SETTINGS["subtitle"],
+            DEFAULT_SETTINGS["bg_color"],
+            DEFAULT_SETTINGS["card_color"],
+            DEFAULT_SETTINGS["primary_color"]
+        ))
+        conn.commit()
+
     cur.close()
     conn.close()
 
-    if settings:
-        return dict(settings)
 
-    return DEFAULT_SETTINGS.copy()
+def get_settings():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return DEFAULT_SETTINGS.copy()
+
+    ensure_user_settings(user_id)
+
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM user_settings WHERE user_id = %s", (user_id,))
+    user_settings = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    settings = DEFAULT_SETTINGS.copy()
+
+    if user_settings:
+        settings["subtitle"] = user_settings["subtitle"]
+        settings["bg_color"] = user_settings["bg_color"]
+        settings["card_color"] = user_settings["card_color"]
+        settings["primary_color"] = user_settings["primary_color"]
+
+    return settings
 
 
 def get_current_user():
@@ -338,6 +358,18 @@ def register():
                     (username, email, password_hash)
                 )
                 new_user = cur.fetchone()
+                conn.commit()
+
+                cur.execute("""
+                    INSERT INTO user_settings (user_id, subtitle, bg_color, card_color, primary_color)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    new_user["id"],
+                    DEFAULT_SETTINGS["subtitle"],
+                    DEFAULT_SETTINGS["bg_color"],
+                    DEFAULT_SETTINGS["card_color"],
+                    DEFAULT_SETTINGS["primary_color"]
+                ))
                 conn.commit()
 
                 session["user_id"] = new_user["id"]
@@ -611,15 +643,15 @@ def settings_page():
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
-            UPDATE settings
-            SET app_title = %s, subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
-            WHERE id = 1
+            UPDATE user_settings
+            SET subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
+            WHERE user_id = %s
         """, (
-            DEFAULT_SETTINGS["app_title"],
             subtitle,
             bg_color,
             card_color,
-            primary_color
+            primary_color,
+            session["user_id"]
         ))
         conn.commit()
         cur.close()
@@ -638,15 +670,15 @@ def reset_settings():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        UPDATE settings
-        SET app_title = %s, subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
-        WHERE id = 1
+        UPDATE user_settings
+        SET subtitle = %s, bg_color = %s, card_color = %s, primary_color = %s
+        WHERE user_id = %s
     """, (
-        DEFAULT_SETTINGS["app_title"],
         DEFAULT_SETTINGS["subtitle"],
         DEFAULT_SETTINGS["bg_color"],
         DEFAULT_SETTINGS["card_color"],
-        DEFAULT_SETTINGS["primary_color"]
+        DEFAULT_SETTINGS["primary_color"],
+        session["user_id"]
     ))
     conn.commit()
     cur.close()
