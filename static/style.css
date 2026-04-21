@@ -362,4 +362,51 @@ button,
     text-decoration: none;
     font-weight: bold;
 }
+
+.danger-zone {
+    margin-top: 30px;
+    padding: 18px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    border-radius: 12px;
+}
+
+.danger-zone h2 {
+    font-size: 1.2rem;
+    color: #991b1b;
+    margin-bottom: 8px;
+}
+
+.danger-zone p {
+    color: #7f1d1d;
+    margin-bottom: 12px;
+}
+
+.delete-account-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.delete-account-form input {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+}
+
+.delete-account-btn {
+    background: #dc2626;
+}
+
+@media (max-width: 700px) {
+    .delete-account-form {
+        flex-direction: column;
+    }
+
+    .delete-account-btn {
+        width: 100%;
+    }
+}
 }
