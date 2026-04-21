@@ -119,7 +119,7 @@ Nous vous souhaitons une excellente utilisation de l'application.
     
     
 def send_deletedaccount_email(to_email, username):
-        subject = "Suppresion de votre compte"
+        subject = "Confirmation suppresion de votre compte"
         body = f"""
 Bonjour {username},
 
