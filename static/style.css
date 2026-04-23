@@ -409,14 +409,4 @@ button,
         width: 100%;
     }
 }
-
-.install-btn {
-    background: #0f766e;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    font-size: 1rem;
-}
 }
