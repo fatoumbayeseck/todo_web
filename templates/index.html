@@ -22,6 +22,46 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/sw.js");
 }
 </script>
+
+<script>
+let deferredPrompt = null;
+const installBtn = document.getElementById("installAppBtn");
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+
+    if (installBtn) {
+        installBtn.style.display = "inline-block";
+    }
+});
+
+if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+
+        if (choiceResult.outcome === "accepted") {
+            console.log("Installation acceptée");
+        } else {
+            console.log("Installation refusée");
+        }
+
+        deferredPrompt = null;
+        installBtn.style.display = "none";
+    });
+}
+
+window.addEventListener("appinstalled", () => {
+    console.log("Application installée");
+    if (installBtn) {
+        installBtn.style.display = "none";
+    }
+});
+</script>
+
 <body>
     <div class="app-container">
         <div class="card">
@@ -34,6 +74,9 @@ if ("serviceWorker" in navigator) {
 
                 <div class="top-actions">
                     <a href="{{ url_for('settings_page') }}" class="settings-btn">Personnaliser</a>
+                    <button id="installAppBtn" class="install-btn" style="display: none;">
+                        Installer l’appli
+                    </button>
                     <a href="{{ url_for('logout') }}" class="logout-btn">Déconnexion</a>
                 </div>
             </div>
