@@ -37,6 +37,20 @@ if ("serviceWorker" in navigator) {
                     </div>
                 {% endif %}
             {% endwith %}
+            
+            <div class="profile-box">
+                <h2>Mon profil</h2>
+            
+                <p>
+                    <strong>Nom d'utilisateur :</strong>
+                    {{ user.username }}
+                </p>
+            
+                <p>
+                    <strong>Email :</strong>
+                    {{ user.email }}
+                </p>
+            </div>
 
             <form method="POST" class="settings-form">
                 <label>
