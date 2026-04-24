@@ -41,12 +41,47 @@
                     </div>
                 {% endif %}
             {% endwith %}
+            
+            
+            <div class="stats-grid">
+          S      <div class="stat-card">
+                    <span class="stat-number">{{ stats.total }}</span>
+                    <span class="stat-label">Total</span>
+                </div>
+            
+                <div class="stat-card">
+                    <span class="stat-number">{{ stats.completed }}</span>
+                    <span class="stat-label">Terminées</span>
+                </div>
+            
+                <div class="stat-card">
+                    <span class="stat-number">{{ stats.pending }}</span>
+                    <span class="stat-label">En cours</span>
+                </div>
+            
+                <div class="stat-card late-stat">
+                    <span class="stat-number">{{ stats.late }}</span>
+                    <span class="stat-label">En retard</span>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span>Progression</span>
+                    <span>{{ stats.completion_rate }}%</span>
+                </div>
+            
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ stats.completion_rate }}%;"></div>
+                </div>
+            </div>
 
             <form method="POST" class="task-form">
                 <input type="text" name="task" placeholder="Nouvelle tâche..." required>
                 <textarea name="note" placeholder="Note (optionnelle)"></textarea>
 
                 <select name="category">
+                    <option value="Général">Général</option>
                     <option value="Voyage">Voyage</option>
                     <option value="Sport">Sport</option>
                     <option value="Travail">Travail</option>
