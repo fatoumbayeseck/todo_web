@@ -525,4 +525,12 @@ button:active,
     .settings-actions button {
         width: 100%;
     }
+    
+    .task-category {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+}
 }
