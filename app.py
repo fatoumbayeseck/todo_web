@@ -82,104 +82,6 @@ def send_email_message(to_email, subject, body, html_body=None):
         smtp.send_message(message)
 
 
-def send_reset_email(to_email, username):
-    token = generate_reset_token(to_email)
-    reset_link = url_for("reset_password", token=token, _external=True)
-
-    subject = "Réinitialisation de votre mot de passe"
-    body = f"""
-Bonjour {username},
-
-Alors comme ça on a oublié son mot de passe ? pas de panique.
-
-Cliquez sur ce lien pour choisir un nouveau mot de passe :
-{reset_link}
-
-Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.
-
-Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
-"""
-    html_body = build_email_html(
-        title="Réinitialisation du mot de passe",
-        message_html=f"""
-            <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Alors comme ça on a oublié son mot de passe ? pas de panique.</p>
-            <p>Cliquez sur ce lien pour choisir un nouveau mot de passe :</p>
-            <p style="color:#b91c1c;"><strong>Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.</strong></p>
-            <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
-        """,
-        action_text="Réinitialiser mon mot de passe",
-        action_link=reset_link
-    )
-
-    send_email_message(to_email, subject, body, html_body)
-
-
-def send_welcome_email(to_email, username):
-    subject = "Bienvenue sur Gestionnaire de tâches by NFMS"
-    body = f"""
-Bonjour {username},
-
-Nous sommes ravis de vous annoncer que votre compte a étè créé avec succés :) .
-
-Vous pouvez maintenant :
-    
-- ajouter des tâches
-- définir une priorité
-- ajouter une note
-- fixer une date limite
-- personnaliser l'interface
-
-Nous vous souhaitons une excellente utilisation de l'application.
-
-À bientôt !
-"""
-    html_body = build_email_html(
-        title="Bienvenue sur Gestionnaire de tâches by NFMS",
-        message_html=f"""
-            <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Nous sommes ravis de vous annoncer que votre compte a étè créé avec succés :) .</p>
-            <p>Vous pouvez maintenant :</p>
-            <ul style="padding-left:20px; color:#374151;">
-                <li>ajouter des tâches</li>
-                <li>définir une priorité</li>
-                <li>ajouter une note</li>
-                <li>fixer une date limite</li>
-                <li>personnaliser votre interface</li>
-            </ul>
-            <p>Nous vous souhaitons une excellente utilisation de l'application.</p>
-        """
-    )
-
-    send_email_message(to_email, subject, body, html_body)
-    
-    
-def send_deletedaccount_email(to_email, username):
-        subject = "Confirmation suppresion de votre compte"
-        body = f"""
-Bonjour {username},
-
-Nous sommes tristes de vous voir partir :( .
-                                          
-Mais nous vous annonçons quand même que votre compte a étè supprimé avec succés.             
-                                         
-À bientôt (finn on l'espére)!
-    """
-        html_body = build_email_html(
-            title="Compte supprimé",
-            message_html=f"""
-                <p>Bonjour <strong>{username}</strong>,</p>
-                <p>Nous sommes tristes de vous voir partir :( .</p>
-                <p>Mais nous vous annonçons quand même que votre compte a étè supprimé avec succés.</p>
-
-                <p>À bientôt (finn on l'espére)!</p>
-            """
-        )
-
-        send_email_message(to_email, subject, body, html_body)
-    
-        
-        
 def build_email_html(title, message_html, action_text=None, action_link=None):
     action_button = ""
     if action_text and action_link:
@@ -211,8 +113,8 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
     <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:Arial, sans-serif;">
         <div style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
             <div style="background:#4f46e5; color:white; padding:24px 30px;">
-                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches by NFMS</h1>
-                <p style="margin:8px 0 0 0; opacity:0.95;">Application d'organisation</p>
+                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches</h1>
+                <p style="margin:8px 0 0 0; opacity:0.95;">Application de gestion personnelle</p>
             </div>
 
             <div style="padding:30px;">
@@ -223,15 +125,126 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
                 </div>
 
                 {action_button}
-                
+
                 <div style="margin-top:30px; padding-top:20px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:14px;">
-                    
+                    Merci d'utiliser <strong>Gestionnaire de tâches</strong>.
                 </div>
             </div>
         </div>
     </body>
     </html>
     """
+
+
+def send_reset_email(to_email, username):
+    token = generate_reset_token(to_email)
+    reset_link = url_for("reset_password", token=token, _external=True)
+
+    subject = "Réinitialisation de votre mot de passe"
+
+    body = f"""
+Bonjour {username},
+
+Vous avez demandé la réinitialisation de votre mot de passe.
+
+Cliquez sur ce lien pour choisir un nouveau mot de passe :
+{reset_link}
+
+Ce lien expire dans 1 heure.
+
+Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
+"""
+
+    html_body = build_email_html(
+        title="Réinitialisation du mot de passe",
+        message_html=f"""
+            <p>Bonjour <strong>{username}</strong>,</p>
+            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+            <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>
+            <p style="color:#b91c1c;"><strong>Ce lien expire dans 1 heure.</strong></p>
+            <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        """,
+        action_text="Réinitialiser mon mot de passe",
+        action_link=reset_link
+    )
+
+    send_email_message(to_email, subject, body, html_body)
+
+
+def send_welcome_email(to_email, username):
+    subject = "Bienvenue sur Gestionnaire de tâches"
+
+    body = f"""
+Bonjour {username},
+
+Bienvenue sur Gestionnaire de tâches.
+
+Votre compte a bien été créé et vous pouvez maintenant :
+- ajouter des tâches
+- définir une priorité
+- ajouter une note
+- fixer une date limite
+- personnaliser l'interface
+
+Nous vous souhaitons une excellente utilisation de l'application.
+
+À bientôt !
+"""
+
+    html_body = build_email_html(
+        title="Bienvenue sur Gestionnaire de tâches",
+        message_html=f"""
+            <p>Bonjour <strong>{username}</strong>,</p>
+            <p>Votre compte a bien été créé avec succès.</p>
+            <p>Vous pouvez maintenant :</p>
+            <ul style="padding-left:20px; color:#374151;">
+                <li>ajouter des tâches</li>
+                <li>définir une priorité</li>
+                <li>ajouter une note</li>
+                <li>fixer une date limite</li>
+                <li>personnaliser votre interface</li>
+            </ul>
+            <p>Nous vous souhaitons une excellente utilisation de l'application.</p>
+        """
+    )
+
+    send_email_message(to_email, subject, body, html_body)
+
+
+def send_account_deleted_email(to_email, username):
+    subject = "Confirmation de suppression de votre compte"
+
+    body = f"""
+Bonjour {username},
+
+Votre compte sur Gestionnaire de tâches a bien été supprimé.
+
+Toutes vos données (tâches, notes, paramètres) ont été définitivement effacées.
+
+Si cette action n'est pas de votre fait, nous vous recommandons de recréer un compte rapidement.
+
+Merci d'avoir utilisé notre application.
+
+À bientôt !
+"""
+
+    html_body = build_email_html(
+        title="Compte supprimé",
+        message_html=f"""
+            <p>Bonjour <strong>{username}</strong>,</p>
+            <p>Votre compte sur <strong>Gestionnaire de tâches</strong> a bien été supprimé.</p>
+            <p>Toutes vos données personnelles liées à l'application ont été effacées :</p>
+            <ul style="padding-left:20px; color:#374151;">
+                <li>vos tâches</li>
+                <li>vos notes</li>
+                <li>vos préférences de personnalisation</li>
+            </ul>
+            <p style="color:#b91c1c;"><strong>Si cette action n'est pas de votre fait, recréez un compte dès que possible.</strong></p>
+            <p>Merci d'avoir utilisé notre application.</p>
+        """
+    )
+
+    send_email_message(to_email, subject, body, html_body)
 
 
 def init_db():
@@ -253,6 +266,7 @@ def init_db():
             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
             note TEXT,
+            category TEXT NOT NULL DEFAULT 'Général',
             done INTEGER NOT NULL DEFAULT 0,
             priority TEXT NOT NULL DEFAULT 'Moyenne',
             deadline TEXT
@@ -271,6 +285,7 @@ def init_db():
     """)
 
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS note TEXT")
+    cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'Général'")
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'Moyenne'")
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline TEXT")
     cur.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id INTEGER")
@@ -383,7 +398,25 @@ def get_priority_rank(priority):
     return order.get(priority, 1)
 
 
-def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value):
+def get_user_categories(user_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT DISTINCT category
+        FROM tasks
+        WHERE user_id = %s AND category IS NOT NULL AND category <> ''
+        ORDER BY category ASC
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    categories = [row[0] for row in rows]
+    if "Général" not in categories:
+        categories.insert(0, "Général")
+    return categories
+
+
+def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value, category_filter):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT * FROM tasks WHERE user_id = %s", (user_id,))
@@ -403,6 +436,9 @@ def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value):
             task for task in tasks
             if task["done"] == 0 and task["deadline"] and task["deadline"] < today
         ]
+
+    if category_filter and category_filter != "toutes":
+        tasks = [task for task in tasks if task.get("category", "Général") == category_filter]
 
     if sort_value == "priorite":
         tasks.sort(
@@ -609,6 +645,7 @@ def index():
     if request.method == "POST":
         task_text = request.form.get("task", "").strip()
         note = request.form.get("note", "").strip()
+        category = request.form.get("category", "Général").strip() or "Général"
         priority = request.form.get("priority", "Moyenne")
         deadline = request.form.get("deadline", "").strip()
 
@@ -617,13 +654,14 @@ def index():
             cur = conn.cursor()
             cur.execute(
                 """
-                INSERT INTO tasks (user_id, title, note, done, priority, deadline)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO tasks (user_id, title, note, category, done, priority, deadline)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     session["user_id"],
                     task_text,
                     note if note else None,
+                    category,
                     0,
                     priority,
                     deadline if deadline else None
@@ -640,8 +678,10 @@ def index():
 
     filter_value = request.args.get("filter", "toutes")
     sort_value = request.args.get("sort", "ordre_ajout")
+    category_filter = request.args.get("category_filter", "toutes")
 
-    tasks = get_filtered_and_sorted_tasks(session["user_id"], filter_value, sort_value)
+    tasks = get_filtered_and_sorted_tasks(session["user_id"], filter_value, sort_value, category_filter)
+    categories = get_user_categories(session["user_id"])
     now = datetime.now().strftime("%Y-%m-%d")
     settings = get_settings()
     user = get_current_user()
@@ -649,9 +689,11 @@ def index():
     return render_template(
         "index.html",
         tasks=tasks,
+        categories=categories,
         now=now,
         current_filter=filter_value,
         current_sort=sort_value,
+        current_category_filter=category_filter,
         settings=settings,
         user=user
     )
@@ -698,6 +740,7 @@ def edit_task(task_id):
     if request.method == "POST":
         new_title = request.form.get("task", "").strip()
         new_note = request.form.get("note", "").strip()
+        new_category = request.form.get("category", "Général").strip() or "Général"
         new_priority = request.form.get("priority", "Moyenne")
         new_deadline = request.form.get("deadline", "").strip()
 
@@ -705,12 +748,13 @@ def edit_task(task_id):
             cur.execute(
                 """
                 UPDATE tasks
-                SET title = %s, note = %s, priority = %s, deadline = %s
+                SET title = %s, note = %s, category = %s, priority = %s, deadline = %s
                 WHERE id = %s AND user_id = %s
                 """,
                 (
                     new_title,
                     new_note if new_note else None,
+                    new_category,
                     new_priority,
                     new_deadline if new_deadline else None,
                     task_id,
@@ -742,7 +786,8 @@ def edit_task(task_id):
         return redirect(url_for("index"))
 
     settings = get_settings()
-    return render_template("edit.html", task=task, settings=settings)
+    categories = get_user_categories(session["user_id"])
+    return render_template("edit.html", task=task, settings=settings, categories=categories)
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -815,16 +860,16 @@ def delete_account():
         return redirect(url_for("login"))
 
     if not password:
-        flash("Veuillez entrer votre mot de passe pour supprimer le compte.", "warning")
+        flash("Veuillez entrer votre mot de passe.", "warning")
         return redirect(url_for("settings_page"))
 
     if not check_password_hash(user["password_hash"], password):
-        flash("Mot de passe incorrect. Suppression du compte annulée.", "error")
+        flash("Mot de passe incorrect.", "error")
         return redirect(url_for("settings_page"))
 
     if user.get("email"):
-        send_deletedaccount_email(user["email"], user["username"])
-        
+        send_account_deleted_email(user["email"], user["username"])
+
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM users WHERE id = %s", (user["id"],))
@@ -835,7 +880,7 @@ def delete_account():
     session.clear()
     flash("Votre compte a été supprimé.", "info")
     return redirect(url_for("register"))
-    
+
 
 init_db()
 
