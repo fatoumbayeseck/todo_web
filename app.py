@@ -481,6 +481,59 @@ def get_filtered_and_sorted_tasks(user_id, filter_value, sort_value, category_fi
     return tasks
 
 
+def get_user_stats(user_id):
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    cur.execute("""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE done = 1) AS completed,
+            COUNT(*) FILTER (WHERE done = 0) AS pending,
+            COUNT(*) FILTER (
+                WHERE done = 0 
+                AND deadline IS NOT NULL 
+                AND deadline <> '' 
+                AND deadline < %s
+            ) AS late
+        FROM tasks
+        WHERE user_id = %s
+    """, (today, user_id))
+
+    stats = cur.fetchone()
+
+    cur.execute("""
+        SELECT category, COUNT(*) AS count
+        FROM tasks
+        WHERE user_id = %s
+        GROUP BY category
+        ORDER BY count DESC
+    """, (user_id,))
+
+    categories_stats = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    total = stats["total"] or 0
+    completed = stats["completed"] or 0
+
+    completion_rate = 0
+    if total > 0:
+        completion_rate = round((completed / total) * 100)
+
+    return {
+        "total": total,
+        "completed": completed,
+        "pending": stats["pending"] or 0,
+        "late": stats["late"] or 0,
+        "completion_rate": completion_rate,
+        "categories": categories_stats
+    }
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     settings = get_settings()
@@ -690,6 +743,7 @@ def index():
 
     tasks = get_filtered_and_sorted_tasks(session["user_id"], filter_value, sort_value, category_filter)
     categories = get_user_categories(session["user_id"])
+    stats = get_user_stats(session["user_id"])
     now = datetime.now().strftime("%Y-%m-%d")
     settings = get_settings()
     user = get_current_user()
@@ -698,6 +752,7 @@ def index():
         "index.html",
         tasks=tasks,
         categories=categories,
+        stats=stats,
         now=now,
         current_filter=filter_value,
         current_sort=sort_value,
