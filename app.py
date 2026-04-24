@@ -145,12 +145,12 @@ def send_reset_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Vous avez demandé la réinitialisation de votre mot de passe.
+Alors comme ça on a oublié son mot de passe ? Pas de panique.
 
 Cliquez sur ce lien pour choisir un nouveau mot de passe :
 {reset_link}
 
-Ce lien expire dans 1 heure.
+Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.
 
 Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
 """
@@ -159,8 +159,10 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
         title="Réinitialisation du mot de passe",
         message_html=f"""
             <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+            <p>Alors comme ça on a oublié son mot de passe ? Pas de panique</p>
             <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>
+            <p>Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.</p>
+            <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.</p>
             <p style="color:#b91c1c;"><strong>Ce lien expire dans 1 heure.</strong></p>
             <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
         """,
@@ -177,7 +179,7 @@ def send_welcome_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Bienvenue sur Gestionnaire de tâches.
+Nous sommes ravis de vous annoncer que votre compte à étè créer avec succés.
 
 Votre compte a bien été créé et vous pouvez maintenant :
 - ajouter des tâches
@@ -195,7 +197,7 @@ Nous vous souhaitons une excellente utilisation de l'application.
         title="Bienvenue sur Gestionnaire de tâches",
         message_html=f"""
             <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Votre compte a bien été créé avec succès.</p>
+            <p>Nous sommes ravis de vous annoncer que votre compte à étè créer avec succés.</p>
             <p>Vous pouvez maintenant :</p>
             <ul style="padding-left:20px; color:#374151;">
                 <li>ajouter des tâches</li>
@@ -217,11 +219,10 @@ def send_account_deleted_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Votre compte sur Gestionnaire de tâches a bien été supprimé.
+Nous sommes tristes de vous voir partir :(.
+Mais on vous annonce quand même que votre compte a étè supprimé avec succés.
 
-Toutes vos données (tâches, notes, paramètres) ont été définitivement effacées.
-
-Si cette action n'est pas de votre fait, nous vous recommandons de recréer un compte rapidement.
+Toutes vos données ont été définitivement effacées.
 
 Merci d'avoir utilisé notre application.
 
@@ -232,14 +233,9 @@ Merci d'avoir utilisé notre application.
         title="Compte supprimé",
         message_html=f"""
             <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Votre compte sur <strong>Gestionnaire de tâches</strong> a bien été supprimé.</p>
-            <p>Toutes vos données personnelles liées à l'application ont été effacées :</p>
-            <ul style="padding-left:20px; color:#374151;">
-                <li>vos tâches</li>
-                <li>vos notes</li>
-                <li>vos préférences de personnalisation</li>
-            </ul>
-            <p style="color:#b91c1c;"><strong>Si cette action n'est pas de votre fait, recréez un compte dès que possible.</strong></p>
+            <p>Nous sommes tristes de vous voir partir :(.</p>
+            <p>Mais on vous annonce quand même que votre compte a étè supprimé avec succés.</p>
+            <p>Toutes vos données ont été définitivement effacées.</p>
             <p>Merci d'avoir utilisé notre application.</p>
         """
     )
