@@ -603,4 +603,23 @@ button:active,
     border-radius: 999px;
     font-size: 0.9rem;
 }
+
+    .profile-box {
+    background: #f9fafb;
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 22px;
+}
+
+.profile-box h2 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    color: var(--text-main);
+}
+
+.profile-box p {
+    margin-bottom: 8px;
+    color: #374151;
+}
 }
