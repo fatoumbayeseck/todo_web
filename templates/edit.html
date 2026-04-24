@@ -37,9 +37,12 @@
                     {% for category in categories %}
                         <option value="{{ category }}" {% if (task.category if task.category else "Général") == category %}selected{% endif %}>{{ category }}</option>
                     {% endfor %}
+                    <option value="Voyage" {% if task.category == "Voyage" %}selected{% endif %}>Voyage</option>
+                    <option value="Sport" {% if task.category == "Sport" %}selected{% endif %}>Sport</option>
                     <option value="Travail" {% if task.category == "Travail" %}selected{% endif %}>Travail</option>
                     <option value="Cours" {% if task.category == "Cours" %}selected{% endif %}>Cours</option>
                     <option value="Personnel" {% if task.category == "Personnel" %}selected{% endif %}>Personnel</option>
+                    <option value="Lecture" {% if task.category == "Lecture" %}selected{% endif %}>Lecture</option>
                     <option value="Urgent" {% if task.category == "Urgent" %}selected{% endif %}>Urgent</option>
                 </select>
 
