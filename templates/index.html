@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ settings.app_title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='app.webmanifest') }}">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
     <style>
         :root {
             --bg-color: {{ settings.bg_color }};
@@ -12,18 +15,7 @@
             --primary-color: {{ settings.primary_color }};
         }
     </style>
-    <link rel="manifest" href="{{ url_for('static', filename='app.webmanifest') }}">
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
 </head>
-
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js");
-}
-</script>
-
-
 <body>
     <div class="app-container">
         <div class="card">
@@ -54,6 +46,14 @@ if ("serviceWorker" in navigator) {
                 <input type="text" name="task" placeholder="Nouvelle tâche..." required>
                 <textarea name="note" placeholder="Note (optionnelle)"></textarea>
 
+                <select name="category">
+                    <option value="Général">Général</option>
+                    <option value="Travail">Travail</option>
+                    <option value="Cours">Cours</option>
+                    <option value="Personnel">Personnel</option>
+                    <option value="Urgent">Urgent</option>
+                </select>
+
                 <select name="priority">
                     <option value="Faible">Faible</option>
                     <option value="Moyenne" selected>Moyenne</option>
@@ -71,6 +71,13 @@ if ("serviceWorker" in navigator) {
                     <option value="en_cours" {% if current_filter == "en_cours" %}selected{% endif %}>En cours</option>
                     <option value="terminees" {% if current_filter == "terminees" %}selected{% endif %}>Terminées</option>
                     <option value="retard" {% if current_filter == "retard" %}selected{% endif %}>En retard</option>
+                </select>
+
+                <select name="category_filter">
+                    <option value="toutes" {% if current_category_filter == "toutes" %}selected{% endif %}>Toutes catégories</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}" {% if current_category_filter == category %}selected{% endif %}>{{ category }}</option>
+                    {% endfor %}
                 </select>
 
                 <select name="sort">
@@ -101,6 +108,8 @@ if ("serviceWorker" in navigator) {
                             {% endif %}
 
                             <div class="task-meta">
+                                <span class="task-category">{{ task.category if task.category else "Général" }}</span>
+
                                 <span class="priority priority-{{ task.priority|lower|replace('é', 'e') }}">
                                     {{ task.priority }}
                                 </span>
@@ -131,5 +140,11 @@ if ("serviceWorker" in navigator) {
             </ul>
         </div>
     </div>
+
+    <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/sw.js");
+    }
+    </script>
 </body>
 </html>

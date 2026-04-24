@@ -12,16 +12,7 @@
             --primary-color: {{ settings.primary_color }};
         }
     </style>
-    <link rel="manifest" href="{{ url_for('static', filename='app.webmanifest') }}">
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
 </head>
-
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js");
-}
-</script>
 <body>
     <div class="app-container">
         <div class="card">
@@ -41,6 +32,16 @@ if ("serviceWorker" in navigator) {
             <form method="POST" class="task-form">
                 <input type="text" name="task" value="{{ task.title }}" required>
                 <textarea name="note">{{ task.note if task.note else '' }}</textarea>
+
+                <select name="category">
+                    {% for category in categories %}
+                        <option value="{{ category }}" {% if (task.category if task.category else "Général") == category %}selected{% endif %}>{{ category }}</option>
+                    {% endfor %}
+                    <option value="Travail" {% if task.category == "Travail" %}selected{% endif %}>Travail</option>
+                    <option value="Cours" {% if task.category == "Cours" %}selected{% endif %}>Cours</option>
+                    <option value="Personnel" {% if task.category == "Personnel" %}selected{% endif %}>Personnel</option>
+                    <option value="Urgent" {% if task.category == "Urgent" %}selected{% endif %}>Urgent</option>
+                </select>
 
                 <select name="priority">
                     <option value="Faible" {% if task.priority == "Faible" %}selected{% endif %}>Faible</option>
