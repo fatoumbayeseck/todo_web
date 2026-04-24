@@ -399,6 +399,8 @@ def get_priority_rank(priority):
 
 
 def get_user_categories(user_id):
+    default_categories = ["Général", "Voyage", "Sport", "Travail", "Cours", "Personnel", "Lecture", "Urgent"]
+
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -410,9 +412,15 @@ def get_user_categories(user_id):
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    categories = [row[0] for row in rows]
-    if "Général" not in categories:
-        categories.insert(0, "Général")
+
+    user_categories = [row[0] for row in rows]
+
+    categories = []
+
+    for category in default_categories + user_categories:
+        if category not in categories:
+            categories.append(category)
+
     return categories
 
 
