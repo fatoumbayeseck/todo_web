@@ -113,7 +113,7 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
     <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:Arial, sans-serif;">
         <div style="max-width:600px; margin:40px auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
             <div style="background:#4f46e5; color:white; padding:24px 30px;">
-                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches</h1>
+                <h1 style="margin:0; font-size:26px;">Gestionnaire de tâches by NFMS</h1>
                 <p style="margin:8px 0 0 0; opacity:0.95;">Application de gestion personnelle</p>
             </div>
 
@@ -126,9 +126,6 @@ def build_email_html(title, message_html, action_text=None, action_link=None):
 
                 {action_button}
 
-                <div style="margin-top:30px; padding-top:20px; border-top:1px solid #e5e7eb; color:#6b7280; font-size:14px;">
-                    Merci d'utiliser <strong>Gestionnaire de tâches</strong>.
-                </div>
             </div>
         </div>
     </body>
@@ -163,8 +160,6 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
             <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.</p>
             <p>Prenez votre temps (pas trop quand même) car ce lien expire dans 1 heure.</p>
             <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.</p>
-            <p style="color:#b91c1c;"><strong>Ce lien expire dans 1 heure.</strong></p>
-            <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
         """,
         action_text="Réinitialiser mon mot de passe",
         action_link=reset_link
@@ -179,7 +174,7 @@ def send_welcome_email(to_email, username):
     body = f"""
 Bonjour {username},
 
-Nous sommes ravis de vous annoncer que votre compte à étè créer avec succés.
+Nous sommes ravis de vous annoncer que votre compte a été créé avec succés.
 
 Votre compte a bien été créé et vous pouvez maintenant :
 - ajouter des tâches
@@ -197,7 +192,7 @@ Nous vous souhaitons une excellente utilisation de l'application.
         title="Bienvenue sur Gestionnaire de tâches",
         message_html=f"""
             <p>Bonjour <strong>{username}</strong>,</p>
-            <p>Nous sommes ravis de vous annoncer que votre compte à étè créer avec succés.</p>
+            <p>Nous sommes ravis de vous annoncer que votre compte a été créé avec succés.</p>
             <p>Vous pouvez maintenant :</p>
             <ul style="padding-left:20px; color:#374151;">
                 <li>ajouter des tâches</li>
@@ -220,7 +215,7 @@ def send_account_deleted_email(to_email, username):
 Bonjour {username},
 
 Nous sommes tristes de vous voir partir :(.
-Mais on vous annonce quand même que votre compte a étè supprimé avec succés.
+Mais on vous annonce quand même que votre compte a été supprimé avec succés.
 
 Toutes vos données ont été définitivement effacées.
 
